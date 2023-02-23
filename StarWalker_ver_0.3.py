@@ -14,10 +14,12 @@ pygame.display.set_caption('StarWalker')
 pygame.init()
 clock = pygame.time.Clock()
 FPS = 60
+sfx_volume = 1
+music_volume = 0.5
 
 # Функция, загружающая изображения
 def load_image(name, colorkey=None):
-    fullname = os.path.join('sprites', name)
+    fullname = os.path.join('assets', name)
     if not os.path.isfile(fullname):
         print(f"Файл с изображением '{fullname}' не найден")
         sys.exit()
@@ -33,7 +35,7 @@ def load_image(name, colorkey=None):
 
 # Возвращает шрифт заданного размера
 def get_font(size):
-    return pygame.font.Font("sprites/buttons/font.ttf", size)
+    return pygame.font.Font("assets/buttons/font.ttf", size)
 
 # Создает кнопки, обрабатывает нажатия и наведение на кнопки
 class Button():
@@ -75,7 +77,10 @@ class GameState():
         self.state = 'main_menu'
 
         self.scroll = 0
-        self.tiles = 3
+        self.tiles = 2
+
+        self.show_htp = True
+        self.start_music = True
 
     def main_menu(self):
         screen.fill('black')
@@ -85,11 +90,11 @@ class GameState():
         title = get_font(75).render("STARWALKER", True, "#b68f40")
         title_rect = title.get_rect(center=(400, 150))
 
-        play_btn = Button(image=pygame.image.load("sprites/buttons/Play Rect.png"), pos=(400, 350),
+        play_btn = Button(image=pygame.image.load("assets/buttons/Play Rect.png"), pos=(400, 350),
                              text_input="PLAY", font=get_font(60), base_color="White", hovering_color="#b68f40")
-        options_btn = Button(image=pygame.image.load("sprites/buttons/Options Rect.png"), pos=(400, 500),
+        options_btn = Button(image=pygame.image.load("assets/buttons/Options Rect.png"), pos=(400, 500),
                                 text_input="OPTIONS", font=get_font(60), base_color="White", hovering_color="#b68f40")
-        quit_btn = Button(image=pygame.image.load("sprites/buttons/Quit Rect.png"), pos=(400, 650),
+        quit_btn = Button(image=pygame.image.load("assets/buttons/Quit Rect.png"), pos=(400, 650),
                              text_input="QUIT", font=get_font(60), base_color="White", hovering_color="#b68f40")
 
         screen.blit(title, title_rect)
@@ -104,7 +109,11 @@ class GameState():
                 sys.exit()
             if event.type == pygame.MOUSEBUTTONDOWN:
                 if play_btn.checkForInput(mouse_pos):
-                    self.state = 'main_game'
+                    if self.show_htp:
+                        self.state = 'how_to_play_mm'
+                        self.show_htp = False
+                    else:
+                        self.state = 'main_game'
                 if options_btn.checkForInput(mouse_pos):
                     self.state = 'options'
                 if quit_btn.checkForInput(mouse_pos):
@@ -114,19 +123,48 @@ class GameState():
         pygame.display.flip()
 
     def options(self):
+        global music_volume, sfx_volume
         screen.fill('black')
 
         mouse_pos = pygame.mouse.get_pos()
 
         option_title = get_font(50).render("OPTIONS", True, "White")
-        options_rect = option_title.get_rect(center=(400, 75))
+        options_rect = option_title.get_rect(center=(400, 50))
+
+        music_text = get_font(40).render("MUSIC", True, "White")
+        music_rect = music_text.get_rect(center=(225, 175))
+        sfx_text = get_font(40).render("SFX", True, "White")
+        sfx_rect = sfx_text.get_rect(center=(225, 275))
+
+        music_volume_text = get_font(40).render(str(int(music_volume * 10) * 10) + "%", True, "White")
+        music_volume_rect = music_volume_text.get_rect(center=(525, 175))
+        sfx_volume_text = get_font(40).render(str(int(sfx_volume * 10) * 10) + "%", True, "White")
+        sfx_volume_rect = sfx_volume_text.get_rect(center=(525, 275))
+
         screen.blit(option_title, options_rect)
+        screen.blit(music_text, music_rect)
+        screen.blit(sfx_text, sfx_rect)
+        screen.blit(music_volume_text, music_volume_rect)
+        screen.blit(sfx_volume_text, sfx_volume_rect)
 
-        back_btn = Button(image=None, pos=(400, 725),
-                          text_input="BACK", font=get_font(75), base_color="White", hovering_color="#b68f40")
 
-        back_btn.changeColor(mouse_pos)
-        back_btn.update(screen)
+        back_btn = Button(image=None, pos=(200, 725),
+                          text_input="BACK", font=get_font(60), base_color="White", hovering_color="#b68f40")
+        htp_btn = Button(image=None, pos=(320, 625),
+                         text_input="HOW TO PLAY?", font=get_font(40), base_color="White", hovering_color="#b68f40")
+
+        music_volume_up = Button(image=None, pos=(625, 175),
+                          text_input=">", font=get_font(40), base_color="White", hovering_color="#b68f40")
+        music_volume_down = Button(image=None, pos=(425, 175),
+                         text_input="<", font=get_font(40), base_color="White", hovering_color="#b68f40")
+        sfx_volume_up = Button(image=None, pos=(625, 275),
+                          text_input=">", font=get_font(40), base_color="White", hovering_color="#b68f40")
+        sfx_volume_down = Button(image=None, pos=(425, 275),
+                         text_input="<", font=get_font(40), base_color="White", hovering_color="#b68f40")
+
+        for button in [back_btn, htp_btn, music_volume_up, music_volume_down, sfx_volume_up, sfx_volume_down]:
+            button.changeColor(mouse_pos)
+            button.update(screen)
 
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
@@ -135,11 +173,90 @@ class GameState():
             if event.type == pygame.MOUSEBUTTONDOWN:
                 if back_btn.checkForInput(mouse_pos):
                     self.state = 'main_menu'
+                if htp_btn.checkForInput(mouse_pos):
+                    self.state = 'how_to_play_opt'
+                if music_volume_up.checkForInput(mouse_pos) and music_volume < 1:
+                    music_volume = round(music_volume + 0.1, 1)
+                if music_volume_down.checkForInput(mouse_pos) and music_volume >= 0.1:
+                    music_volume = round(music_volume - 0.1, 1)
+                if sfx_volume_up.checkForInput(mouse_pos) and sfx_volume < 1:
+                    sfx_volume = round(sfx_volume + 0.1, 1)
+                if sfx_volume_down.checkForInput(mouse_pos) and sfx_volume >= 0.1:
+                    sfx_volume = round(sfx_volume - 0.1, 1)
 
         pygame.display.flip()
 
-    # Функция, отвечающая за экран игры
+    def how_to_play(self, previous_screen):
+
+        mouse_pos = pygame.mouse.get_pos()
+
+        screen.fill('black')
+
+        htp_title = get_font(50).render("HOW TO PLAY", True, "White")
+        htp_rect = htp_title.get_rect(center=(400, 75))
+
+        movement_text = get_font(25).render("Press WASD to move", True, "White")
+        movement_rect = movement_text.get_rect(center=(400, 225))
+
+        shoot_text = get_font(25).render("Press SPACE to shoot", True, "White")
+        shoot_rect = shoot_text.get_rect(center=(400, 300))
+
+        exit_text = get_font(25).render("Press ESC to end current", True, "White")
+        exit_rect = exit_text.get_rect(center=(400, 375))
+        exit_text_2 = get_font(25).render("run and return to main menu", True, "White")
+        exit_rect_2 = exit_text.get_rect(center=(365, 410))
+
+        if previous_screen == 'main_menu':
+            play_btn = Button(image=pygame.image.load("assets/buttons/Play Rect.png"), pos=(600, 700),
+                              text_input="PLAY", font=get_font(60), base_color="White", hovering_color="#b68f40")
+            back_btn = Button(image=pygame.image.load("assets/buttons/Play Rect.png"), pos=(200, 700),
+                              text_input="BACK", font=get_font(60), base_color="White", hovering_color="#b68f40")
+        elif previous_screen == 'options':
+            back_btn = Button(image=pygame.image.load("assets/buttons/Play Rect.png"), pos=(400, 700),
+                              text_input="BACK", font=get_font(60), base_color="White", hovering_color="#b68f40")
+
+
+        if previous_screen == 'main_menu':
+            for button in [play_btn, back_btn]:
+                button.changeColor(mouse_pos)
+                button.update(screen)
+        elif previous_screen == 'options':
+            back_btn.changeColor(mouse_pos)
+            back_btn.update(screen)
+
+        screen.blit(htp_title, htp_rect)
+        screen.blit(movement_text, movement_rect)
+        screen.blit(shoot_text, shoot_rect)
+        screen.blit(exit_text, exit_rect)
+        screen.blit(exit_text_2, exit_rect_2)
+
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT:
+                pygame.quit()
+                sys.exit()
+            if event.type == pygame.MOUSEBUTTONDOWN:
+                if previous_screen == 'main_menu':
+                    if play_btn.checkForInput(mouse_pos):
+                        self.state = 'main_game'
+                    if back_btn.checkForInput(mouse_pos):
+                        self.state = previous_screen
+                        self.show_htp = True
+                elif previous_screen == 'options':
+                    if back_btn.checkForInput(mouse_pos):
+                        self.state = previous_screen
+
+
+        pygame.display.flip()
+
+
+    # Метод, отвечающий за экран игры
     def main_game(self):
+        if self.start_music:
+            pygame.mixer.music.load("assets/sound/spaceship shooter .wav")
+            pygame.mixer.music.play(-1)
+            pygame.mixer.music.set_volume(music_volume)
+            self.start_music = False
+
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 pygame.quit()
@@ -148,6 +265,8 @@ class GameState():
         self.keys = pygame.key.get_pressed()
 
         if self.keys[pygame.K_ESCAPE]:
+            pygame.mixer.music.unload()
+            self.start_music = True
             self.state = 'main_menu'
 
         ship.update(self.keys)
@@ -157,7 +276,7 @@ class GameState():
         for i in range(0, self.tiles):
             screen.blit(bg, (0, bg_h * i - 2000 + self.scroll))
 
-        self.scroll += 5
+        self.scroll += 4
 
         if abs(self.scroll) > bg_h:
             self.scroll = 0
@@ -174,6 +293,10 @@ class GameState():
             self.main_game()
         elif self.state == 'options':
             self.options()
+        elif self.state == 'how_to_play_mm':
+            self.how_to_play('main_menu')
+        elif self.state == 'how_to_play_opt':
+            self.how_to_play('options')
 
 
 # Класс, отвечающий за действия и отображение игрока
@@ -182,7 +305,7 @@ class Player(pygame.sprite.Sprite):
     image2 = load_image("player_ship/player_ship_2.png")
     image = pygame.transform.scale(image, (50, 50))
     image2 = pygame.transform.scale(image2, (50, 50))
-    laser_sfx = pygame.mixer.Sound("sprites/spaceship shooter music/laser.wav")
+    laser_sfx = pygame.mixer.Sound("assets/sound/laser.wav")
 
     def __init__(self, *group):
         super().__init__(*group)
@@ -213,18 +336,19 @@ class Player(pygame.sprite.Sprite):
 
         self.image = self.sprites[int(self.current_sprite)]
 
-        if game_state.keys[pygame.K_w]:
+        if game_state.keys[pygame.K_w] and self.rect.top > 0:
             self.rect.y -= self.speedy
-        elif game_state.keys[pygame.K_s]:
+        elif game_state.keys[pygame.K_s] and self.rect.bottom < HEIGHT:
             self.rect.y += self.speedy
 
-        if game_state.keys[pygame.K_a]:
+        if game_state.keys[pygame.K_a] and self.rect.left > 0:
             self.rect.x -= self.speedx
-        elif game_state.keys[pygame.K_d]:
+        elif game_state.keys[pygame.K_d] and self.rect.right < WIDTH:
             self.rect.x += self.speedx
 
         if game_state.keys[pygame.K_SPACE]:
             self.reload += self.shooting_speed
+            self.laser_sfx.set_volume(sfx_volume)
 
             if int(self.reload):
                 bullet_group.add(self.shoot())
