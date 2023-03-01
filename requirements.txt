@@ -1,0 +1,7 @@
+os 
+sys
+math
+random
+csv
+operator
+pygame
