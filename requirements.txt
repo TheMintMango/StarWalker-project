@@ -1,7 +1,7 @@
-os 
-sys
-math
-random
-csv
-operator
-pygame
+altgraph==0.17.3
+future==0.18.2
+pefile==2022.5.30
+pygame==2.1.2
+pyinstaller==5.6.2
+pyinstaller-hooks-contrib==2022.13
+pywin32-ctypes==0.2.0
